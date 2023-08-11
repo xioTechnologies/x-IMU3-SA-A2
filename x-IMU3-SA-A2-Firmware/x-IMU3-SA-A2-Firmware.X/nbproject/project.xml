@@ -4,12 +4,8 @@
     <configuration>
         <data xmlns="http://www.netbeans.org/ns/make-project/1">
             <name>x-IMU3-SA-A2-Firmware</name>
-            <creation-uuid>7098b7e6-8224-4163-be63-b4d0cd1c1064</creation-uuid>
+            <creation-uuid>c6aa9b79-c786-46c4-9087-f4ddadec176d</creation-uuid>
             <make-project-type>0</make-project-type>
-            <c-extensions>c</c-extensions>
-            <cpp-extensions/>
-            <header-extensions>h</header-extensions>
-            <asminc-extensions/>
             <sourceEncoding>ISO-8859-1</sourceEncoding>
             <make-dep-projects/>
             <sourceRootList>
