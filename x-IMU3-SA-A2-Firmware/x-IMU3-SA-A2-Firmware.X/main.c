@@ -36,7 +36,7 @@
 // Function declarations
 
 static uint8_t GetAdcResult(void);
-static void PrintVoltage(const uint8_t result);
+static void PrintVoltage(const uint8_t channel, const uint8_t fvr);
 
 //------------------------------------------------------------------------------
 // Functions
@@ -51,44 +51,45 @@ void main(void) {
     TRISAbits.TRISA1 = 0;
     LATAbits.LATA1 = 1;
 
+    // Enable FVR
+    FVRCONbits.FVREN = 1;
+    FVRCONbits.ADFVR = 0b10; // 2.048 V
+
     // Enable ADC
     ADCONbits.ADCS = 0b101; // TAD = 1 us
     ADCONbits.ADON = 1;
 
     // Print firmware version
     Delay(DelayPeriod512ms);
-    UartTXString("x-IMU3-SA-A2 v1.0\r\n");
+    UartTXString("x-IMU3-SA-A2 v1.1.0\r\n");
 
     // Main program loop
     while (true) {
 
-        // Begin channel 1 acquisition
-        ADCONbits.CHS = 0b010; // AN2
+        // Measure reference
+        ADCONbits.CHS = 0b111; // FVR
+        Delay(DelayPeriod1ms);
+        uint8_t fvr = GetAdcResult();
 
-        // Delay for sample period
-        Delay(DelayPeriod8ms);
-
-        // Channel 1 conversion
-        uint8_t result = GetAdcResult();
-
-        // Begin channel 2 acquisition
+        // Measure channel 1
         ADCONbits.CHS = 0b000; // AN0
+        Delay(DelayPeriod1ms);
+        uint8_t channel1 = GetAdcResult();
 
-        // Print channel 1 voltage
-        PrintVoltage(result);
+        // Measure channel 2
+        ADCONbits.CHS = 0b010; // AN2
+        Delay(DelayPeriod1ms);
+        uint8_t channel2 = GetAdcResult();
 
-        // Print comma
+        // Write message
+        PrintVoltage(channel1, fvr);
         UartTXByte(',');
-
-        // Channel 2 conversion
-        result = GetAdcResult();
-
-        // Print channel 2 voltage
-        PrintVoltage(result);
-
-        // Print termination
-        UartTXByte('\r');
+        PrintVoltage(channel2, fvr);
         UartTXByte('\n');
+
+        // Wait remaining sample period
+        Delay(DelayPeriod1ms);
+        Delay(DelayPeriod4ms);
     }
 }
 
@@ -98,15 +99,17 @@ void main(void) {
  */
 static uint8_t GetAdcResult(void) {
     ADCONbits.GO_nDONE = 1;
-    while (ADCONbits.GO_nDONE == 0);
+    while (ADCONbits.GO_nDONE == 1);
     return ADRES;
 }
 
 /**
- * @brief Prints ADC result as voltage.
+ * @brief Prints voltage.
+ * @param channel Channel ADC result.
+ * @param fvr FVR ADC result.
  */
-static void PrintVoltage(const uint8_t result) {
-    uint16_t value = result * (28000 / UINT8_MAX); // 2.8 V reference
+static void PrintVoltage(const uint8_t channel, const uint8_t fvr) {
+    uint16_t value = channel * (20480 / fvr);
     UartTXByte('0' + (uint8_t) (value / 10000));
     value %= 10000;
     UartTXByte('.');
